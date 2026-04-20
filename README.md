@@ -85,6 +85,63 @@ You can adjust the behavior of `ccwarn` with the following environment variables
 
 All environment variables are optional, set with sensible default values.
 
+## Design Philosophy (Retrospective)
+
+`ccrun` was designed as a minimal companion tool to `ccwarn`, focusing on a different stage of the development workflow: execution.
+
+While `ccwarn` answers the question:
+
+> *"Does this code compile cleanly?"*
+
+`ccrun` focuses on:
+
+> *"Can this code be compiled and run quickly without setup?"*
+
+### Why another tool?
+
+In C and C++, even small programs require explicit compilation before execution. For quick experiments or small code bases, writing a Makefile or configuring a build system introduces unnecessary friction.
+
+`ccrun` removes that friction by providing a zero-configuration way to compile and run code immediately.
+
+### Why support multiple source files?
+
+Although designed for small code bases, `ccrun` allows multiple source files to be compiled together, including mixed C and C++ projects.
+
+This enables simple experiments that go beyond single-file programs without requiring a full build system.
+
+### Why use `--` for runtime arguments?
+
+`ccrun` uses `--` to separate compiler inputs from runtime arguments. This design follows conventions used by many CLI tools and avoids ambiguity between source files and program arguments.
+
+### Safety considerations
+
+Unlike `ccwarn`, `ccrun` executes compiled binaries. This makes it inherently unsafe when used with untrusted source code.
+
+Users are responsible for ensuring that input code is trusted before execution.
+
+### Scope and limitations
+
+`ccrun` is intentionally minimal and does not aim to replace build systems. It does not:
+
+- resolve complex dependencies
+- manage large projects
+- provide incremental builds
+
+Instead, it focuses on:
+
+- fast iteration
+- zero configuration
+- simple workflows
+
+### Relationship with `ccwarn`
+
+`ccrun` and `ccwarn` are designed to complement each other:
+
+- `ccwarn` checks code quality and portability
+- `ccrun` enables quick compilation and execution
+
+Together, they form a lightweight toolset for small C/C++ development workflows.
+
 ## Note
 
 If you want to check code quality and conform some language standard for your C or C++ source, see [ccwarn](https://github.com/cwchentw/ccwarn).
