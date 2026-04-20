@@ -2,282 +2,276 @@
 # Run C or C++ code automatically.
 # Author: Michelle Chen  License: MIT
 
+program=$0
+VERSION=0.2.0
+LICENSE_NAME=MIT
 
-program="$0";
-version="0.1.0";
-license="MIT";
+unsupported_file_extension=unknown
+unsupported_file_type=empty
 
-unsupported_file_extension="unknown"
-unsupported_file_type="empty"
-
-version ()
-{
-    echo $version;
+show_version() {
+    printf '%s\n' "$VERSION"
 }
 
-license ()
-{
-    echo $license;
+show_license() {
+    printf '%s\n' "$LICENSE_NAME"
 }
 
-#--------1---------2---------3---------4---------5---------6---------7---------8
-#2345678901234567890123456789012345678901234567890123456789012345678901234567890
-help_info ()
-{
-    printf "Usage: %s [command] ...\n" "$program";
-    printf "       %s help [command]\n" "$program";
-    printf "\n";
-    printf "Commands:\n";
-    printf "\tversion\t\tShow version info and exit\n";
-    printf "\tlicense\t\tShow license info and exit\n";
-    printf "\thelp\t\tShow help info and exit\n";
-    printf "\trun\t\tCompile and run an application (default)\n";
-    printf "\n";
-    printf "Environment variables:\n";
-    printf "\tOUT_FILE\t\tThe name of output file\n";
-    printf "\tCC\t\t\tSet C compier, default to gcc\n";
-    printf "\tCXX\t\t\tSet C++ Compiler, default to g++\n"
-    printf "\tCFLAGS\t\t\tCustom include paths and compiler flags for C\n";
-    printf "\tCXXFLAGS\t\tCusteom include paths and compiler flags for C++\n";
-    printf "\tLDFLAGS\t\t\tCustom library paths\n";
-    printf "\tLIBS\t\t\tCustom library linkage\n";
-    printf "\tLD_LIBRARY_PATH\t\tCustom binary file paths\n";
-}
-#2345678901234567890123456789012345678901234567890123456789012345678901234567890
-#--------1---------2---------3---------4---------5---------6---------7---------8
-
-help_version ()
-{
-    echo "Usage: $program version";
-    echo "";
-    echo "Show version info and exit";
+help_info() {
+    printf 'Usage: %s [run] source.c [source.cpp ...] [-- args...]\n' "$program"
+    printf '       %s [command]\n' "$program"
+    printf '       %s help [command]\n' "$program"
+    printf '\n'
+    printf 'Commands:\n'
+    printf '\tversion\t\tShow version info and exit\n'
+    printf '\tlicense\t\tShow license info and exit\n'
+    printf '\thelp\t\tShow help info and exit\n'
+    printf '\trun\t\tCompile and run an application (default)\n'
+    printf '\n'
+    printf 'Environment variables:\n'
+    printf '\tOUT_FILE\tName of output file (copied to current directory if set)\n'
+    printf '\tCC\t\tSet C compiler, default to gcc\n'
+    printf '\tCXX\t\tSet C++ compiler, default to g++\n'
+    printf '\tCFLAGS\t\tCustom include paths and compiler flags for C\n'
+    printf '\tCXXFLAGS\tCustom include paths and compiler flags for C++\n'
+    printf '\tCPPFLAGS\tCommon preprocessor flags\n'
+    printf '\tLDFLAGS\t\tCustom library paths / linker flags\n'
+    printf '\tLIBS\t\tCustom libraries\n'
+    printf '\tLD_LIBRARY_PATH\tCustom runtime library search path\n'
 }
 
-help_license ()
-{
-    echo "Usage: $program license";
-    echo "";
-    echo "Show license info and exit";
+help_version() {
+    printf 'Usage: %s version\n' "$program"
+    printf '\n'
+    printf 'Show version info and exit\n'
 }
 
-help_help ()
-{
-    echo "Usage: $program help [command]";
-    echo "";
-    echo "Show help info for [command] and exit";
+help_license() {
+    printf 'Usage: %s license\n' "$program"
+    printf '\n'
+    printf 'Show license info and exit\n'
 }
 
-help_run ()
-{
-    echo "Usage: $program [run] main.m ...";
-    echo "";
-    echo "Run a C or C++ program";
+help_help() {
+    printf 'Usage: %s help [command]\n' "$program"
+    printf '\n'
+    printf 'Show help info for [command] and exit\n'
 }
 
-# check_ext extension
-check_ext ()
-{
-    local ext=$1;
+help_run() {
+    printf 'Usage: %s [run] source.c [source.cpp ...] [-- args...]\n' "$program"
+    printf '\n'
+    printf 'Compile and run a C or C++ program\n'
+}
 
-    if [ -z "$ext" ];
-    then
-        echo "No valid extenstion" >&2;
-        exit 1;
+check_ext() {
+    ext=$1
+
+    if [ -z "$ext" ]; then
+        printf 'No valid extension\n' >&2
+        exit 1
     fi
 
-    case $ext in
-    *.cpp)
-        echo ".cpp"
-        ;;
-    *.cxx)
-        echo ".cxx"
-        ;;
-    *.cc)
-        echo ".cc"
-        ;;
-    *.c)
-        echo ".c"
-        ;;
-    *)
-        echo "Unsupported file: $1" >&2;
-        echo $unsupported_file_extension;
+    case "$ext" in
+        *.cpp) printf '.cpp\n' ;;
+        *.cxx) printf '.cxx\n' ;;
+        *.cc)  printf '.cc\n' ;;
+        *.c)   printf '.c\n' ;;
+        *)
+            printf 'Unsupported file: %s\n' "$1" >&2
+            printf '%s\n' "$unsupported_file_extension"
+            ;;
     esac
 }
 
-# check_file_type extension
-check_file_type ()
-{
-    local ext=$1;
+check_file_type() {
+    ext=$1
 
-    if [ -z "$ext" ];
-    then
-        echo "No valid extension" >&2;
-        exit 1;
+    if [ -z "$ext" ]; then
+        printf 'No valid extension\n' >&2
+        exit 1
     fi
 
-    case $ext in
-    .c)
-        echo "c";
-        ;;
-    .cpp|.cxx|.cc)
-        echo "c++";
-        ;;
-    *)
-        echo "Unknown file extension: $FILE_EXT" >&2;
-        echo $unsupported_file_type;
-        ;;
+    case "$ext" in
+        .c)
+            printf 'c\n'
+            ;;
+        .cpp|.cxx|.cc)
+            printf 'c++\n'
+            ;;
+        *)
+            printf 'Unknown file extension: %s\n' "$ext" >&2
+            printf '%s\n' "$unsupported_file_type"
+            ;;
     esac
+}
+
+cleanup() {
+    if [ -n "${builddir-}" ] && [ -d "$builddir" ]; then
+        rm -rf -- "$builddir"
+    fi
+}
+
+make_builddir() {
+    if command -v mktemp >/dev/null 2>&1; then
+        mktemp -d "${TMPDIR:-/tmp}/crun.XXXXXX"
+    else
+        dir="${TMPDIR:-/tmp}/crun.$$"
+        (umask 077 && mkdir "$dir") || return 1
+        printf '%s\n' "$dir"
+    fi
+}
+
+compile_source() {
+    compiler=$1
+    obj=$2
+    src=$3
+    flags=$4
+
+    # shellcheck disable=SC2086
+    "$compiler" -c -o "$obj" $CPPFLAGS $flags "$src"
 }
 
 cmd=$1
+
 if [ "$cmd" = "version" ]; then
-    version;
-    exit 0;
+    show_version
+    exit 0
 fi
 
 if [ "$cmd" = "license" ]; then
-    license;
-    exit 0;
+    show_license
+    exit 0
 fi
 
 if [ "$cmd" = "help" ]; then
-    subcmd=$2;
-
-    if [ "$subcmd" = "version" ]; then
-        help_version;
-    elif [ "$subcmd" = "license" ]; then
-        help_license;
-    elif [ "$subcmd" = "help" ]; then
-        help_help;
-    elif [ "$subcmd" = "run" ]; then
-        help_run;
-    elif [ "$subcmd" = "" ]; then
-        help_info;
-    else
-        echo "Unknown subcommand: $2" >&2;
-        exit 1;
-    fi
-
-    exit 0;
+    subcmd=$2
+    case "$subcmd" in
+        version) help_version ;;
+        license) help_license ;;
+        help)    help_help ;;
+        run)     help_run ;;
+        "")      help_info ;;
+        *)
+            printf 'Unknown subcommand: %s\n' "$subcmd" >&2
+            exit 1
+            ;;
+    esac
+    exit 0
 fi
 
-if [ "$cmd" = "run" ];
-then
-    shift;
+if [ "$cmd" = "run" ]; then
+    shift
 fi
 
-CC=$CC;
-if [ -z "$CC" ];
-then
-    CC="gcc";
+: "${CC:=gcc}"
+: "${CXX:=g++}"
+: "${CFLAGS:=}"
+: "${CXXFLAGS:=}"
+: "${CPPFLAGS:=}"
+: "${LDFLAGS:=}"
+: "${LIBS:=}"
+
+if ! command -v "$CC" >/dev/null 2>&1; then
+    printf 'Please install %s\n' "$CC" >&2
+    exit 1
 fi
 
-CXX=$CXX;
-if [ -z "$CXX" ];
-then
-    CXX="g++";
+if ! command -v "$CXX" >/dev/null 2>&1; then
+    printf 'Please install %s\n' "$CXX" >&2
+    exit 1
 fi
 
-# Set dist file
-dest=$OUT_FILE;
-if [ -z "$dest" ];
-then
-    dest="out";
-fi
-
-if [ -f "$dest" ] || [ -d "$dest" ];
-then
-    echo "File or directory ${dest} exists in directory";
-    exit 1;
-fi
-
-clean ()
-{
-    rm -f $dest "lib${dest}.a" "lib${dest}.so" -- *.o;
+builddir=$(make_builddir) || {
+    printf 'Failed to create temporary build directory\n' >&2
+    exit 1
 }
+trap 'cleanup' EXIT HUP INT TERM
 
-# Check whether `gcc` exists on the host.
-if ! command -v $CC 2>/dev/null 1>&2;
-then
-    echo "Please install gcc" >&2;
-    exit 1;
+dest=$builddir/out
+if [ -n "${OUT_FILE-}" ]; then
+    case "$OUT_FILE" in
+        */*)
+            printf 'OUT_FILE must be a file name, not a path: %s\n' "$OUT_FILE" >&2
+            exit 1
+            ;;
+    esac
+    final_out=$OUT_FILE
+else
+    final_out=
 fi
 
-# Check whether `g++` exists on the host.
-if ! command -v $CXX 2>/dev/null 1>&2;
-then
-    echo "Please install g++" >&2;
-    exit 1;
-fi
+is_cpp=0
+src_count=0
+obj_list=
+had_error=0
 
-# Run the program.
-IS_CPP=0;
-OBJS="";
-IS_WRONG=0;
-for file in $@;
-do
-    if [ "$file" = "--" ];
-    then
-        break;
+while [ $# -gt 0 ]; do
+    if [ "$1" = "--" ]; then
+        shift
+        break
     fi
+
+    file=$1
+    shift
 
     FILE_EXT=$(check_ext "$file")
-
-    if [ "$FILE_EXT" = "$unsupported_file_extension" ];
-    then
-        IS_WRONG=1;
-        continue;
+    if [ "$FILE_EXT" = "$unsupported_file_extension" ]; then
+        had_error=1
+        continue
     fi
 
-    filename=$(basename "$file");
-    objname="${filename%$FILE_EXT}.o";
-    OBJS="$objname $OBJS";
+    FILE_TYPE=$(check_file_type "$FILE_EXT")
+    src_count=$((src_count + 1))
+    objname=$builddir/obj_$src_count.o
 
-    FILE_TYPE=$(check_file_type "$FILE_EXT");
-
-    if [ "$FILE_TYPE" = "c" ];
-    then
-        $CC -c -o "$objname" "$file" $CFLAGS;
-    elif [ "$FILE_TYPE" = "c++" ];
-    then
-        IS_CPP=1;
-        $CXX -c -o "$objname" "$file" $CXXFLAGS;
+    if [ "$FILE_TYPE" = "c" ]; then
+        if ! compile_source "$CC" "$objname" "$file" "$CFLAGS"; then
+            had_error=1
+        fi
+    elif [ "$FILE_TYPE" = "c++" ]; then
+        is_cpp=1
+        if ! compile_source "$CXX" "$objname" "$file" "$CXXFLAGS"; then
+            had_error=1
+        fi
+    else
+        had_error=1
     fi
+
+    obj_list="${obj_list}${obj_list:+ }$objname"
 done
 
-if [ $IS_WRONG -ne 0 ];
-then
-    exit 1;
+if [ "$src_count" -eq 0 ]; then
+    printf 'No input source files\n' >&2
+    help_run >&2
+    exit 1
 fi
 
-if [ $IS_CPP -eq 1 ];
-then
-    LIBS_INTERNAL="-lstdc++";
+if [ "$had_error" -ne 0 ]; then
+    exit 1
 fi
-$CC -o $dest $OBJS $LIBS_INTERNAL $LIBS $CFLAGS $LDFLAGS;
 
-args="";
-is_arg=0;
-for arg in $@;
-do
-    if [ "$arg" = "--" ];
-    then
-        is_arg=1;
-        continue;
+if [ "$is_cpp" -eq 1 ]; then
+    link_driver=$CXX
+else
+    link_driver=$CC
+fi
+
+# shellcheck disable=SC2086
+if ! "$link_driver" -o "$dest" $obj_list $LDFLAGS $LIBS; then
+    exit 1
+fi
+
+if [ -n "$final_out" ]; then
+    if [ -e "$final_out" ]; then
+        printf 'File already exists: %s\n' "$final_out" >&2
+        exit 1
     fi
-
-    if [ $is_arg -eq 1 ];
-    then
-       args="$args $arg";
-    fi
-done
-
-if ! LD_LIBRARY_PATH=$LD_LIBRARY_PATH ./$dest $args;
-then
-    clean;
-    exit 1;
+    cp -- "$dest" "$final_out" || exit 1
 fi
 
-clean;
+if ! env LD_LIBRARY_PATH="${LD_LIBRARY_PATH-}" "$dest" "$@"; then
+    exit 1
+fi
 
-exit 0;
+exit 0
